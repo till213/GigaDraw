@@ -3,9 +3,12 @@ MODULE GigaDraw;
 
 (* implementiert die User-Kommandos *)
 
-IMPORT OliObjects, FortiFrames, Viewers, MenuViewers, TextFrames, Texts, Oberon;
+IMPORT OliObjects, FortiFrames, Viewers, Texts, Oberon, MenuViewers, TextFrames;
 CONST
 	menuwidth = 14;
+
+VAR
+	W: Texts.Writer;
 
 PROCEDURE Reset*();
 VAR
@@ -72,16 +75,29 @@ BEGIN
 		Texts.OpenScanner(S, seltext, beg);
 		Texts.Scan(S);
 		IF S.class = Texts.Int THEN
-			OliObjects.ChangeColor(SHORT(SHORT(S.i)));
+			OliObjects.ChangeColor(S.i)
 		END
 	END
-END ChangeColor;	
+END ChangeColor;
+
+PROCEDURE LogText*(msg: ARRAY OF CHAR);
+VAR
+BEGIN
+	Texts.WriteString(W, msg);
+	Texts.Append(Oberon.Log, W.buf)
+END LogText;
+
+PROCEDURE LogInt*(i: INTEGER);
+VAR
+BEGIN
+	Texts.WriteInt(W, i, 10);
+	Texts.Append(Oberon.Log, W.buf)
+END LogInt;
 
 BEGIN
+	Texts.OpenWriter(W)
 END GigaDraw.
 
-System.Free Lines GigaDraw FortiFrames OliObjects~
-GigaDraw.Open
 
 	
 	

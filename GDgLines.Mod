@@ -4,7 +4,7 @@ MODULE gLines;
 (* implementiert schraege Linien - die Koordinaten sind "Weltkoordinaten", bei einer DrawMsg rechnen die Linien *)
 (* diese Koordinaten selbstaendig in Screenkoordinaten um *)
 
-IMPORT OliObjects, FortiFrames, Display, Oberon, Viewers;
+IMPORT Display, Viewers, Oberon, OliObjects, FortiFrames;
 
 CONST
 	tol = 2;	(* Toleranz: 2 Pixel darf man danebenklicken *)
@@ -48,7 +48,7 @@ BEGIN
 		incNE:= 2 * (dy - dx);
 		x:= x0;
 		y:= y0;
-		Display.DotC(F, col, x, y, Display.replace);
+		Display.Dot(col, x, y, Display.replace);
 		WHILE (x < x1) DO
 			IF (d <= 0) THEN
 				INC(d, incE)
@@ -57,7 +57,7 @@ BEGIN
 				INC(y, incY);
 			END;
 			INC(x);
-			Display.DotC(F, col, x, y, Display.replace)
+			Display.Dot(col, x, y, Display.replace)
 		END
 	ELSE	(* Steigung > 1 *)
 		IF y1 < y0 THEN
@@ -77,7 +77,8 @@ BEGIN
 		incNE:= 2 * (dx - dy);
 		x:= x0;
 		y:= y0;
-		Display.DotC(F, col, x, y, Display.replace);
+		(*Display.DotC(F, col, x, y, Display.replace);*)
+		Display.Dot(col, x, y, Display.replace);
 		WHILE (y < y1) DO
 			IF (d <= 0) THEN
 				INC(d, incE)
@@ -86,7 +87,8 @@ BEGIN
 				INC(x, incX);
 			END;
 			INC(y);
-			Display.DotC(F, col, x, y, Display.replace)
+			(* Display.DotC(F, col, x, y, Display.replace)*)
+			Display.Dot(col, x, y, Display.replace)
 		END
 	END
 END BresenhamLine;
@@ -105,12 +107,13 @@ PROCEDURE SelectablegLine(gline: OliObjects.Object; x, y: INTEGER): BOOLEAN;
 (* sensitiver Punkt ist Start und Endpunkt *)
 
 VAR
-
+	sel: BOOLEAN;
 BEGIN
-	WITH gline: gLine DO
-		RETURN ((x >= gline.x - tol) & (x <= gline.x + SAW + tol) & (y >= gline.y - tol) & (y <= gline.y + SAH + tol)) OR
+	CASE gline OF gLine:
+		sel := ((x >= gline.x - tol) & (x <= gline.x + SAW + tol) & (y >= gline.y - tol) & (y <= gline.y + SAH + tol)) OR
 			((x >= gline.x + gline.w - tol) & (x <= gline.x + gline.w + SAW + tol) & (y >= gline.y + gline.h - tol) & (y <= gline.y + gline.h + SAH + tol))
 	END
+	RETURN sel
 END SelectablegLine;
 
 PROCEDURE HandlegLine(gline: OliObjects.Object; VAR msg: OliObjects.Message);
@@ -121,29 +124,49 @@ VAR
 	u, v: INTEGER;	(* Screen-Koordinaten *)
 	
 BEGIN
-	IF msg IS FortiFrames.DrawMsg THEN
-		WITH msg: FortiFrames.DrawMsg DO
-			WITH gline: gLine DO
-				u:= gline.x + msg.f.x;	(* Screenkoordinaten berechnen *)
-				v:= gline.y + msg.f.y;
-			
-				CASE msg.mode OF
-					OliObjects.draw:	IF gline.selected THEN
-													BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
-													Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-													Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
-												ELSE
-													BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
-												END;
-					|	OliObjects.select:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-													Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
-					|	OliObjects.normal:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-													Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
-					|	OliObjects.erase:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-													Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
-													BresenhamLine(u, v, u + gline.w, v + gline.h, Display.black, msg.f);
-													
-				END
+	CASE msg OF FortiFrames.DrawMsg:
+		CASE gline OF gLine:
+			u:= gline.x + msg.f.x;	(* Screenkoordinaten berechnen *)
+			v:= gline.y + msg.f.y;
+		
+		    (* Numerical case not implemented *)
+			(*
+			CASE msg.mode OF
+				OliObjects.draw:	IF gline.selected THEN
+												BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
+												Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
+												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
+											ELSE
+												BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
+											END;
+				|	OliObjects.select:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
+												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
+				|	OliObjects.normal:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
+												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
+				|	OliObjects.erase:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
+												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
+												BresenhamLine(u, v, u + gline.w, v + gline.h, Display.black, msg.f);
+												
+			END
+			*)
+			IF msg.mode = OliObjects.draw THEN	
+				IF gline.selected THEN
+					BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
+					Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
+					Display.ReplConst(Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
+				ELSE
+					BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
+				END;
+			ELSIF msg.mode = OliObjects.select THEN
+				Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
+				Display.ReplConst(Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
+			ELSIF msg.mode = OliObjects.normal THEN	
+				Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
+				Display.ReplConst(Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
+			ELSIF msg.mode = OliObjects.erase THEN
+				Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
+				Display.ReplConst(Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
+				BresenhamLine(u, v, u + gline.w, v + gline.h, Display.black, msg.f)								
 			END
 		END
 	END	(* Ignoriere andere Messages *)
@@ -174,30 +197,33 @@ VAR
 rmMsg: FortiFrames.RestoreMarksMsg;
 	
 BEGIN
-	IF ~((FortiFrames.mark0.set) & (FortiFrames.mark1.set)) THEN
-		(* eventuell hier noch Fehlermeldung ausgeben *)
-		RETURN
-	END;
-	
-	NEW(gline);
-	gline.w:= FortiFrames.mark1.x - FortiFrames.mark0.x;
-	gline.h:= FortiFrames.mark1.y - FortiFrames.mark0.y;
-	gline.x:= FortiFrames.mark0.x;
-	gline.y:= FortiFrames.mark0.y;
-	
-gline.col:= OliObjects.color;
-	gline.selected:= TRUE;	(* Linie soll selektiert gemalt werden *)
-	gline.do:= glinemethod;
+	IF ((FortiFrames.mark0.set) & (FortiFrames.mark1.set)) THEN
 
-	Viewers.Broadcast(rmMsg);	(* alte Markierungen werden geloescht *)
-	
-	FortiFrames.mark0.x:= FortiFrames.mark1.x;	(* mark0 geht erst jetzt an Pos. von mark1 *)
-	FortiFrames.mark0.y:= FortiFrames.mark1.y;
-	FortiFrames.mark1.set:= FALSE;	(* mark1 soll verschwinden *)
-	
-	(* die folgene Prozedur kuemmert sich um das Einfuegen und Benachrichtigen aller Frames *)
-	(* ausserdem werden dort alle anderen Objekte vorher deselektiert *)
-	FortiFrames.InsertObject(FortiFrames.markedG, gline)
+		NEW(gline);
+		gline.w:= FortiFrames.mark1.x - FortiFrames.mark0.x;
+		gline.h:= FortiFrames.mark1.y - FortiFrames.mark0.y;
+		gline.x:= FortiFrames.mark0.x;
+		gline.y:= FortiFrames.mark0.y;
+		
+		gline.col:= OliObjects.color;
+		gline.selected:= TRUE;	(* Linie soll selektiert gemalt werden *)
+		gline.do:= glinemethod;
+
+		Viewers.Broadcast(rmMsg);	(* alte Markierungen werden geloescht *)
+		
+		FortiFrames.SetMarkX(0, FortiFrames.mark1.x);
+		FortiFrames.SetMarkY(0, FortiFrames.mark1.y);
+		(*FortiFrames.mark0.x:= FortiFrames.mark1.x;	(* mark0 geht erst jetzt an Pos. von mark1 *)
+		FortiFrames.mark0.y:= FortiFrames.mark1.y; *)
+		FortiFrames.SetMarkEnabled(1, FALSE);
+		(*FortiFrames.mark1.set:= FALSE;*)	(* mark1 soll verschwinden *)
+		
+		(* die folgene Prozedur kuemmert sich um das Einfuegen und Benachrichtigen aller Frames *)
+		(* ausserdem werden dort alle anderen Objekte vorher deselektiert *)
+		FortiFrames.InsertObject(FortiFrames.markedG, gline)
+
+	END
+
 END MakegLine;
 
 BEGIN
@@ -209,3 +235,6 @@ BEGIN
 	glinemethod.selectable:= SelectablegLine;
 	glinemethod.handle:= HandlegLine;
 END gLines.
+
+
+ORP.Compile GDgLines.Mod~

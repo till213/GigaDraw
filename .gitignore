@@ -1,7 +1,7 @@
 # Oberon Generated
 *.rsc
 *.smb
-
+*.obdel*
 
 # Oberon V5 Modules
 Blink.Mod

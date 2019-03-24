@@ -1,6 +1,4 @@
 MODULE FortiFrames;
-(* Systemsoftware WS 98/99, Oliver Knoll, Raphael Huber *)
-
 IMPORT OliObjects, Display, Viewers, Input, Fonts, Texts, Oberon, MenuViewers;
 TYPE
 	Frame* = POINTER TO FrameDesc;
@@ -30,16 +28,16 @@ TYPE
 
 	(* PacMan Bewegungsmeldung: *)
 	FPacMoveMsg* = RECORD (Display.FrameMsg)	(* diese Message geht an Frames... *)
-		dx*: SHORTINT;
-		dy*: SHORTINT;
-		id*: SHORTINT;	(* welcher PacMan soll sich bewegen? *)
+		dx*: INTEGER;
+		dy*: INTEGER;
+		id*: INTEGER;	(* welcher PacMan soll sich bewegen? *)
 	END;
 
 	OPacMoveMsg* = RECORD (OliObjects.Message)	(* ...und diese Meldung geht an Objecte innerhalb Frame *)
 		f*: Frame;
-		dx*: SHORTINT;
-		dy*: SHORTINT;
-		id*: SHORTINT
+		dx*: INTEGER;
+		dy*: INTEGER;
+		id*: INTEGER
 	END;
 	
 	markDesc = RECORD	(* Markers, beziehen sich auf Grafik (nicht auf Frame) und bezeichen math. Koord *)
@@ -50,10 +48,17 @@ TYPE
 VAR 
 	mark0*, mark1*: markDesc;	(* Markers global -> nur 1 Fokus fuer alle Grafiken *)
 	markedG*: OliObjects.Graphic;	(* welche (der evt. versch. offenen) Grafiken traegt den Fokus (Markers) *)
-	
+
 PROCEDURE PinsideBox(x, y, bx, by, bX, bY: INTEGER): BOOLEAN;
+VAR
+	inside: BOOLEAN;
 BEGIN
-	IF (bx <= x) & (by <= y) & (x <= bX) & (y <= bY) THEN RETURN TRUE ELSE RETURN FALSE END
+	IF (bx <= x) & (by <= y) & (x <= bX) & (y <= bY) THEN 
+		inside := TRUE
+	ELSE
+		inside := FALSE
+	END
+	RETURN inside
 END PinsideBox;
 	
 PROCEDURE FlipMark(x, y: INTEGER); (* zeichnet / loescht Fokus-Kreuz *)
@@ -74,6 +79,34 @@ BEGIN
 	roMsg.obj := o; roMsg.mode := OliObjects.draw; roMsg.graphic := markedG; Viewers.Broadcast(roMsg);
 	Viewers.Broadcast(rmMsg)	(* Markers sind u.U. neu: mark1 am Ende einer neuen Linie *)
 END InsertObject;
+
+PROCEDURE SetMarkX*(id: INTEGER; x: INTEGER);
+BEGIN
+	IF id = 0 THEN
+		mark0.x := x
+	ELSE
+		mark1.x := x
+	END
+END SetMarkX;
+
+PROCEDURE SetMarkY*(id: INTEGER; y: INTEGER);
+BEGIN
+	IF id = 0 THEN
+		mark0.y := y
+	ELSE
+		mark1.y := y
+	END
+END SetMarkY;
+
+
+PROCEDURE SetMarkEnabled*(id: INTEGER; enable: BOOLEAN);
+BEGIN
+	IF id = 0 THEN
+		mark0.set := enable
+	ELSE
+		mark1.set := enable
+	END
+END SetMarkEnabled;
 
 PROCEDURE Restore*(F: Frame);
 VAR
@@ -115,9 +148,11 @@ BEGIN
 	REPEAT	(* warte bis Maus losgelasen, registriere solange zusaetzliche Klicks (Interklicks) *)
 		Input.Mouse(k2, x1, y1); k1 := k1+k2;
 		DEC(x1, (x1-F.x) MOD 4); DEC(y1, (y1-F.y) MOD 4);
-		Oberon.DrawCursor(Oberon.Mouse, Oberon.Arrow, x1, y1)
+		(*Oberon.DrawCursor(Oberon.Mouse, Oberon.Arrow, x1, y1) *)
+		Oberon.DrawMouseArrow(x1, y1)
 	UNTIL k2 = {};
-	Oberon.FadeCursor(Oberon.Mouse);
+	(* Oberon.FadeMouse(Oberon.Mouse); *)
+	Oberon.FadeMouse();
 	
 	IF k0 = {2} THEN
 		IF k1 = {2} THEN	
@@ -182,77 +217,86 @@ BEGIN
 	END
 END Edit;
 
-PROCEDURE Handle(F: Display.Frame; VAR msg: Display.FrameMsg);
+PROCEDURE Handle(frame: Display.Frame; VAR msg: Display.FrameMsg);
 VAR
 	x, y: INTEGER;
-	clone: Frame;
+	F, clone: Frame;
 	dMsg: DrawMsg;
 	opmMsg: OPacMoveMsg;
-
+	restoreObjMsg: RestoreObjMsg;
 BEGIN
-	WITH F: Frame DO
-		IF msg IS Oberon.InputMsg THEN
-			WITH msg: Oberon.InputMsg DO
-				IF msg.id = Oberon.track THEN
-					x := msg.X - (msg.X - F.x) MOD 4; y := msg.Y - (msg.Y - F.y) MOD 4;	(* Mouse moves "MOD 4" *)
-					IF msg.keys # {} THEN Edit(F, x, y, msg.keys)
-					ELSE Oberon.DrawCursor(Oberon.Mouse, Oberon.Arrow, x, y) END
+	
+	(* A bold assumption; but it compiles for now :) *)
+	F:= frame(Frame);
+	CASE msg OF 
+		Oberon.InputMsg:
+		(*WITH msg: Oberon.InputMsg DO*)
+			IF msg.id = Oberon.track THEN
+				x := msg.X - (msg.X - F.x) MOD 4; y := msg.Y - (msg.Y - F.y) MOD 4;	(* Mouse moves "MOD 4" *)
+				IF msg.keys # {} THEN Edit(F, x, y, msg.keys)
+				ELSE Oberon.DrawMouseArrow(x, y)
 				END
 			END
-		ELSIF msg IS Oberon.ControlMsg THEN
-			WITH msg: Oberon.ControlMsg DO
-				IF msg.id = Oberon.neutralize THEN
-					Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
-					OliObjects.DeselectAll(F.graphic); markedG := NIL;
-					mark0.set := FALSE; mark1.set := FALSE; Restore(F);
-				END
-			END
-		ELSIF msg IS Oberon.CopyMsg THEN
-			WITH msg: Oberon.CopyMsg DO
+		(*END*)
+	| 	Oberon.ControlMsg:
+		(*WITH msg: Oberon.ControlMsg DO *)
+			IF msg.id = Oberon.neutralize THEN
 				Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
-				NEW(clone);  clone^ := F^;  msg.F := clone
+				OliObjects.DeselectAll(F.graphic); markedG := NIL;
+				mark0.set := FALSE; mark1.set := FALSE; 
+				Restore(F);
 			END
-		ELSIF msg IS MenuViewers.ModifyMsg THEN
-			WITH msg: MenuViewers.ModifyMsg DO
-				F.Y := msg.Y; F.H := msg.H; Restore(F)
-			END
-		ELSIF msg IS RestoreObjMsg THEN
-			WITH msg: RestoreObjMsg DO
-				IF F.graphic = msg.graphic THEN
-					dMsg.f := F; dMsg.mode := msg.mode; msg.obj.do.handle(msg.obj, dMsg);
-				END
-			END
-		ELSIF msg IS RestoreSelMsg THEN
-			WITH msg: RestoreSelMsg DO
-				IF F.graphic = msg.graphic THEN
-					dMsg.f := F; dMsg.mode := msg.mode; OliObjects.BroadcastSelected(F.graphic, dMsg)
-				END
-			END
-		ELSIF msg IS RestoreMarksMsg THEN
-			WITH msg: RestoreMarksMsg DO
-				IF mark0.set & (markedG = F.graphic) & PinsideBox(mark0.x+F.x, mark0.y+F.y, F.X, F.Y, F.X1, F.Y1) THEN
-					FlipMark(mark0.x+F.x, mark0.y+F.y) END;
-				IF mark1.set & (markedG = F.graphic) & PinsideBox(mark1.x+F.x, mark1.y+F.y, F.X, F.Y, F.X1, F.Y1) THEN
-					FlipMark(mark1.x+F.x, mark1.y+F.y) END;
-			END
-		ELSIF msg IS RestoreMsg THEN
+		(*END*)
+	|	Oberon.CopyMsg:
+		(*WITH msg: Oberon.CopyMsg DO*)
+			Oberon.RemoveMarks(F.X, F.Y, F.W, F.H);
+			NEW(clone);  clone^ := F^;  msg.F := clone
+		(*END*)
+	|	MenuViewers.ModifyMsg:
+		(*WITH msg: MenuViewers.ModifyMsg DO*)
+			F.Y := msg.Y; F.H := msg.H;
 			Restore(F)
-		ELSIF msg IS FPacMoveMsg THEN	(* kopiere Daten um und informiere Objecte in F *)
-			WITH msg: FPacMoveMsg DO
-				opmMsg.f:= F;
-				opmMsg.dx:= msg.dx;
-				opmMsg.dy:= msg.dy;
-				opmMsg.id:= msg.id;
-				OliObjects.BroadcastAll(F.graphic, opmMsg)
+		(*END*)
+	|	RestoreObjMsg:
+		(*WITH msg: RestoreObjMsg DO*)
+			IF F.graphic = msg.graphic THEN
+				dMsg.f := F; dMsg.mode := msg.mode;
+				msg.obj.do.handle(msg.obj, dMsg);
 			END
-		END
-		(* Verstehe andere Meldungen nicht *)
+		(*END*)
+	|	RestoreSelMsg:
+		(*WITH msg: RestoreSelMsg DO*)
+			IF F.graphic = msg.graphic THEN
+				dMsg.f := F; dMsg.mode := msg.mode; 
+				OliObjects.BroadcastSelected(F.graphic, dMsg)
+			END
+		(*END*)
+	|	RestoreMarksMsg:
+		(*WITH msg: RestoreMarksMsg DO*)
+			IF mark0.set & (markedG = F.graphic) & PinsideBox(mark0.x+F.x, mark0.y+F.y, F.X, F.Y, F.X1, F.Y1) THEN
+				FlipMark(mark0.x+F.x, mark0.y+F.y) END;
+			IF mark1.set & (markedG = F.graphic) & PinsideBox(mark1.x+F.x, mark1.y+F.y, F.X, F.Y, F.X1, F.Y1) THEN
+				FlipMark(mark1.x+F.x, mark1.y+F.y) END;
+		(*END*)
+	|	RestoreMsg:
+		Restore(F)
+	|	FPacMoveMsg:	(* kopiere Daten um und informiere Objecte in F *)
+		(*WITH msg: FPacMoveMsg DO*)
+			opmMsg.f:= F;
+			opmMsg.dx:= msg(FPacMoveMsg).dx;
+			opmMsg.dy:= msg(FPacMoveMsg).dy;
+			opmMsg.id:= msg(FPacMoveMsg).id;
+			OliObjects.BroadcastAll(F.graphic, opmMsg)
+		(*END*)
 	END
+	(* Verstehe andere Meldungen nicht *)
+
 END Handle;
 
 PROCEDURE NewFrame*(F: Frame);
 BEGIN
-	F.handle := Handle; F.graphic := OliObjects.NewGraphic()
+	F.handle := Handle;
+	F.graphic := OliObjects.NewGraphic()
 END NewFrame;
 
 BEGIN

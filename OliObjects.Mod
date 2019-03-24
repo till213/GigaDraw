@@ -1,5 +1,5 @@
-MODULE OliObjects;
 (* Systemsoftware WS 98/99, Oliver Knoll, Raphael Huber *)
+MODULE OliObjects;
 
 (* in allen Objekten sind die "Welt" - Koordinaten gespeichert *)
 (* "Welt" - Koordinaten: Koordinaten, die sich auf unser definiertes Koordinatensystem beziehen *)
@@ -17,7 +17,7 @@ TYPE
 	Object* = POINTER TO ObjectDesc;
 	ObjectDesc* = RECORD
 		x*, y*, w*, h*: INTEGER;	(* w, h koennen auch negativ sein *)
-		col*: SHORTINT;
+		col*: INTEGER; (* SHORTINT *)
 		selected*: BOOLEAN;
 		do*: Method;
 		next: Object;
@@ -39,18 +39,21 @@ TYPE
 	END;
 
 VAR	(* global *)
-	color*: SHORTINT;	(* mit dieser Farbe werden beim Einfuegen Objekte gemalt *)
+	color*: INTEGER;	(* SHORTINT - mit dieser Farbe werden beim Einfuegen Objekte gemalt *)
 
 PROCEDURE Max(a, b: LONGINT): LONGINT;
 (* retourniert den groesseren Wert *)
-
+VAR
+	max: LONGINT;
 BEGIN
-	IF a >= b THEN
-		RETURN a
-	ELSE
-		RETURN b
-	END
+  IF a >= b THEN
+    max := a
+  ELSE
+    max := b
+  END
+  RETURN max
 END Max;
+
 
 PROCEDURE AddObject*(G: Graphic; obj: Object);
 (* fuegt Objekt zu Graphic hinzu *)
@@ -201,10 +204,8 @@ END SelectArea;
 
 PROCEDURE DeselectAll*(G: Graphic);
 (* Deselektiert alle Objekte im Graph G *)
-
 VAR
 	obj: Object;
-
 BEGIN
 	obj:= G.root;
 	WHILE obj # NIL DO
@@ -215,16 +216,14 @@ END DeselectAll;
 
 PROCEDURE ThisObject*(G: Graphic; x, y: INTEGER): Object;
 (* Retourniert ein  anhand der "mathematischen" Koordinaten angewaehltes Objekt *)
-
 VAR
-	obj: Object;
-
+  obj: Object;
 BEGIN
-	obj:= G.root;
-	WHILE (obj # NIL) & ~obj.do.selectable(obj, x, y) DO
-		obj:= obj.next;
-	END;
-	RETURN obj;
+  obj:= G.root;
+  WHILE (obj # NIL) & ~obj.do.selectable(obj, x, y) DO
+    obj:= obj.next;
+  END;
+  RETURN obj
 END ThisObject;
 
 PROCEDURE BroadcastAll*(G: Graphic; VAR M: Message);
@@ -267,7 +266,7 @@ BEGIN
 	RETURN g
 END NewGraphic;
 
-PROCEDURE ChangeColor*(newc: SHORTINT);
+PROCEDURE ChangeColor*(newc: INTEGER);
 VAR
 
 BEGIN

@@ -7,7 +7,7 @@ MODULE Lines;
 (* w und h sind immer positiv (dies vereinfacht die Berechnungen in SelectableLine() ), d.h. x und y sind beim *)
 (* Erschaffen einer Linie entsprechend zu setzen *)
 
-IMPORT OliObjects, FortiFrames, Display, Oberon, Viewers;
+IMPORT Display, OliObjects, FortiFrames, Viewers, Oberon;
 
 CONST
 	tol = 2;	(* Toleranz: 2 Pixel darf man danebenklicken *)
@@ -24,47 +24,63 @@ VAR
 	
 PROCEDURE CopyLine(from, to: OliObjects.Object);
 (* kopiert eine Linie: from ist die Originallinie MyLine, to ist eine vorgaengig mit MyLine.do.new() erschaffene Linie *)
-
 VAR
-
 BEGIN
 	to(Line)^:= from(Line)^
 END CopyLine;
 
 PROCEDURE SelectableLine(line: OliObjects.Object; x, y: INTEGER): BOOLEAN;
 (* entscheidet, ob ein Mausklick mit Toleranz tol die Linie selektiert *)
-
 VAR
-
 BEGIN
 	RETURN (x >= line.x - tol) & (x <= line.x + line.w + tol) & (y >= line.y - tol) & (y <= line.y + line.h + tol)
-
 END SelectableLine;
 
 PROCEDURE HandleLine(line: OliObjects.Object; VAR msg: OliObjects.Message);
 (* interpretiert die Messages, welche von FortiFrames aus kommen *)
 (* im Moment wird nur die DrawMsg interpretiert *)
-
 VAR
 	u, v, w, h: INTEGER;	(* Screen-Koordinaten *)
-	
+	mode: INTEGER;
 BEGIN
-	IF msg IS FortiFrames.DrawMsg THEN
-		WITH msg: FortiFrames.DrawMsg DO
-			WITH line: Line DO
+	CASE msg OF FortiFrames.DrawMsg:
+		CASE msg OF FortiFrames.DrawMsg:
+			CASE line OF Line:
 				u:= line.x + msg.f.x;	(* Screenkoordinaten berechnen *)
 				v:= line.y + msg.f.y;
 				w:= line.w;
 				h:= line.h;
-				CASE msg.mode OF
+				mode := msg.mode;
+				(* Numeric case not implemented???
+				CASE mode OF
 					OliObjects.draw:	IF line.selected THEN
-													Display.ReplPatternC(msg.f, line.col, Display.grey0, u, v, w, h, u, v, Display.replace)
-												ELSE
-													Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace)
-												END;
-					|	OliObjects.select:	Display.ReplPatternC(msg.f, line.col,  Display.grey0, u, v, w, h, u, v, Display.replace)
-					|	OliObjects.normal:	Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace)
-					|	OliObjects.erase:	Display.ReplConstC(msg.f, Display.black, u, v, w, h, Display.replace)
+											Display.ReplPatternC(msg.f, line.col, Display.grey0, u, v, w, h, u, v, Display.replace)
+										ELSE
+											Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace)
+										END;
+					| OliObjects.select:	Display.ReplPatternC(msg.f, line.col,  Display.grey0, u, v, w, h, u, v, Display.replace)
+					| OliObjects.normal:	Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace)
+					| OliObjects.erase:	Display.ReplConstC(msg.f, Display.black, u, v, w, h, Display.replace)
+				END
+				*)
+				(* TODO OK: ReplPatternC does not exist anymore -> implement clipping *)
+				IF mode = OliObjects.draw THEN
+					IF line.selected THEN
+						(*Display.ReplPatternC(msg.f, line.col, Display.grey0, u, v, w, h, u, v, Display.replace) *)
+ 						Display.ReplPattern(line.col, Display.grey, u, v, w, h, Display.replace)
+					ELSE
+						(* Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace) *)
+						Display.ReplConst(line.col, u, v, w, h, Display.replace)
+					END
+				ELSIF mode = OliObjects.select THEN
+					(* Display.ReplPatternC(msg.f, line.col,  Display.grey0, u, v, w, h, u, v, Display.replace) *)
+					Display.ReplPattern(line.col, Display.grey, u, v, w, h, Display.replace)
+				ELSIF mode = OliObjects.normal THEN
+					(* Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace) *)
+					Display.ReplConst(line.col, u, v, w, h, Display.replace)
+				ELSIF mode = OliObjects.erase THEN
+					(* Display.ReplConstC(msg.f, Display.black, u, v, w, h, Display.replace) *)
+					Display.ReplConst(Display.black, u, v, w, h, Display.replace)
 				END
 			END
 		END
@@ -73,10 +89,8 @@ END HandleLine;
 					
 PROCEDURE NewLine(): OliObjects.Object;
 (* retourniert eine neue Linie und initialisiert Methoden-Rekord *)
-
 VAR
 	line: Line;
-	
 BEGIN
 	NEW(line);
 	line.do:= linemethod;
@@ -89,18 +103,21 @@ PROCEDURE MakeLine*();
 (* Zeichnet Linie im mit dem Stern markierten Frame. Diese ist anschliessend selektiert *)
 (* eine Linie wird von mark0 nach mark1 gemalt, wobei mark0 anschliessend Position *)
 (* von mark1 einnimmt und mark1 verschwindet. *)
-
 VAR
 	line: Line;
 	w, h: INTEGER;
 	rmMsg: FortiFrames.RestoreMarksMsg;
-
 BEGIN
+
+(*
 	IF ~((FortiFrames.mark0.set) & (FortiFrames.mark1.set)) THEN
 		(* eventuell hier noch Fehlermeldung ausgeben *)
 		RETURN
 	END;
-	
+
+*)
+	IF ((FortiFrames.mark0.set) & (FortiFrames.mark1.set)) THEN
+
 	NEW(line);
 	line.col:= OliObjects.color;
 	line.selected:= TRUE;	(* Linie soll selektiert gemalt werden *)
@@ -112,41 +129,51 @@ BEGIN
 	(* jetzt bestimmen wir das x und y *)
 	IF (ABS(w) > ABS(h)) THEN	(* male horizontale Linie *)
 		IF (w < 0) THEN	(* w ist negativ -> vertausche die x *)
-			FortiFrames.mark0.x:= FortiFrames.mark1.x;	(* mark0 geht an Pos. von mark1 *)
+			(*FortiFrames.mark0.x:= FortiFrames.mark1.x;*)	(* mark0 geht an Pos. von mark1 *)
+			FortiFrames.SetMarkX(0, FortiFrames.mark1.x);
 			line.x:= FortiFrames.mark0.x;
 			line.y:= FortiFrames.mark0.y;
 			line.w:= -1 * w;	(* Breite ist jetzt positiver Wert *)
 			line.h:= 1;
-			FortiFrames.mark1.set:= FALSE;	(* mark1 soll verschwinden *)
+			(*FortiFrames.mark1.set:= FALSE; *)	(* mark1 soll verschwinden *)
+			FortiFrames.SetMarkEnabled(1, FALSE);
 		ELSE	(* w ist schon positiv *)
 			line.x:= FortiFrames.mark0.x;
 			line.y:= FortiFrames.mark0.y;
-			FortiFrames.mark0.x:= FortiFrames.mark1.x;	(* mark0 geht erst jetzt an Pos. von mark1 *)
+			(*FortiFrames.mark0.x:= FortiFrames.mark1.x;*)	(* mark0 geht erst jetzt an Pos. von mark1 *)
+			FortiFrames.SetMarkX(0, FortiFrames.mark1.x);
 			line.w:= w;
 			line.h:= 1;
-			FortiFrames.mark1.set:= FALSE	(* mark1 soll verschwinden *)
+			(*FortiFrames.mark1.set:= FALSE*)	(* mark1 soll verschwinden *)
+			FortiFrames.SetMarkEnabled(1, FALSE)
 		END
 	ELSE	(* male vertikale Linie *)
 		IF (h < 0) THEN (* h ist negativ -> vertausche die y *)
-			FortiFrames.mark0.y:= FortiFrames.mark1.y;	(* mark0 geht an Pos. von mark1 *)
+			(*FortiFrames.mark0.y:= FortiFrames.mark1.y;*)	(* mark0 geht an Pos. von mark1 *)
+			FortiFrames.SetMarkY(0, FortiFrames.mark1.y);
 			line.x:= FortiFrames.mark0.x;
 			line.y:= FortiFrames.mark0.y;
 			line.w:= 1;
 			line.h:= -1 * h;	(* Hoehe ist jetzt positiver Wert *)
-			FortiFrames.mark1.set:= FALSE;	(* mark1 soll verschwinden *)
+			(*FortiFrames.mark1.set:= FALSE;*)	(* mark1 soll verschwinden *)
+			FortiFrames.SetMarkEnabled(1, FALSE);
 		ELSE	(* h ist schon positiv *)
 			line.x:= FortiFrames.mark0.x;
 			line.y:= FortiFrames.mark0.y;
-			FortiFrames.mark0.y:= FortiFrames.mark1.y;	(* mark0 geht erst jetzt an Pos. von mark1 *)
+		(*	FortiFrames.mark0.y:= FortiFrames.mark1.y;*)	(* mark0 geht erst jetzt an Pos. von mark1 *)
+			FortiFrames.SetMarkY(0, FortiFrames.mark1.y);
 			line.w:= 1;
 			line.h:= h;
-			FortiFrames.mark1.set:= FALSE	(* mark1 soll verschwinden *)
+			(*FortiFrames.mark1.set:= FALSE*)	(* mark1 soll verschwinden *)
+			FortiFrames.SetMarkEnabled(1, FALSE)
 		END
 	END;
 	
 	(* die folgene Prozedur kuemmert sich um das Einfuegen und Benachrichtigen aller Frames *)
 	(* ausserdem werden dort alle anderen Objekte vorher deselektiert *)
-	FortiFrames.InsertObject(FortiFrames.markedG, line)
+	FortiFrames.InsertObject(FortiFrames.markedG, line);
+
+END
 END MakeLine;
 
 BEGIN
