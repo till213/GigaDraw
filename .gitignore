@@ -1,5 +1,41 @@
 # Oberon Generated
+*.rsc
+*.smb
+
 
 # Oberon V5 Modules
+Blink.Mod
+Display.Mod
+Edit.Mod
+FileDirOSX.Mod
+Files.Mod
+Fonts.Mod
+Hilbert.Mod
+Input.Mod
+KernelOSX.Mod
+Math.Mod
+MenuViewers.Mod
+Modules.Mod
+Oberon.Mod
+ORB.Mod
+ORG.Mod
+ORP.Mod
+ORS.Mod
+ORTool.Mod
+Sierpinski.Mod
+Stars.Mod
+System.Mod
+TextFrames.Mod
+Texts.Mod
+Tools.Mod
+Viewers.Mod
+
+# Oberon Miscellaneous
+*.Bak
+*.Fnt
+*.obbootFiles
+OberonSyntax.Text
+System.Tool
+
 
 
