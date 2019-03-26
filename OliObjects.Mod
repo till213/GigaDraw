@@ -6,10 +6,10 @@
 MODULE OliObjects;
 
 CONST
-	draw* = 0;   (* draws the object according to its state: normal or selected *)
-	select* = 1; (* draws an object as selected *)
-	normal* = 2; (* draws an object as normal *)
-	erase* = 3;  (* erases an object*)
+	Draw* = 0;   (* draws the object according to its state: normal or selected *)
+	Select* = 1; (* draws an object as selected *)
+	Normal* = 2; (* draws an object as normal *)
+	Erase* = 3;  (* erases an object*)
 	
 TYPE
 	Method* = POINTER TO MethodDesc;

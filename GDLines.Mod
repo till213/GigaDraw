@@ -51,35 +51,19 @@ BEGIN
 				w:= line.w;
 				h:= line.h;
 				mode := msg.mode;
-				(* Numeric case not implemented???
-				CASE mode OF
-					OliObjects.draw:	IF line.selected THEN
-											Display.ReplPatternC(msg.f, line.col, Display.grey0, u, v, w, h, u, v, Display.replace)
-										ELSE
-											Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace)
-										END;
-					| OliObjects.select:	Display.ReplPatternC(msg.f, line.col,  Display.grey0, u, v, w, h, u, v, Display.replace)
-					| OliObjects.normal:	Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace)
-					| OliObjects.erase:	Display.ReplConstC(msg.f, Display.black, u, v, w, h, Display.replace)
-				END
-				*)
+				
 				(* TODO OK: ReplPatternC does not exist anymore -> implement clipping *)
-				IF mode = OliObjects.draw THEN
+				IF mode = OliObjects.Draw THEN
 					IF line.selected THEN
-						(*Display.ReplPatternC(msg.f, line.col, Display.grey0, u, v, w, h, u, v, Display.replace) *)
- 						Display.ReplPattern(line.col, Display.grey, u, v, w, h, Display.replace)
+						Display.ReplPattern(line.col, Display.grey, u, v, w, h, Display.replace)
 					ELSE
-						(* Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace) *)
 						Display.ReplConst(line.col, u, v, w, h, Display.replace)
 					END
-				ELSIF mode = OliObjects.select THEN
-					(* Display.ReplPatternC(msg.f, line.col,  Display.grey0, u, v, w, h, u, v, Display.replace) *)
+				ELSIF mode = OliObjects.Select THEN
 					Display.ReplPattern(line.col, Display.grey, u, v, w, h, Display.replace)
-				ELSIF mode = OliObjects.normal THEN
-					(* Display.ReplConstC(msg.f, line.col, u, v, w, h, Display.replace) *)
+				ELSIF mode = OliObjects.Normal THEN
 					Display.ReplConst(line.col, u, v, w, h, Display.replace)
-				ELSIF mode = OliObjects.erase THEN
-					(* Display.ReplConstC(msg.f, Display.black, u, v, w, h, Display.replace) *)
+				ELSIF mode = OliObjects.Erase THEN
 					Display.ReplConst(Display.black, u, v, w, h, Display.replace)
 				END
 			END

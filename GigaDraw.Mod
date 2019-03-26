@@ -1,11 +1,13 @@
+(* 
+   The main module implementing the user commands.
+
+   Systemsoftware WS 98/99, Oliver Knoll, Raphael Huber 
+*)
 MODULE GigaDraw;
-(* Systemsoftware WS 98/99, Oliver Knoll, Raphael Huber *)
 
-(* implementiert die User-Kommandos *)
-
-IMPORT OliObjects, FortiFrames, Viewers, Texts, Oberon, MenuViewers, TextFrames;
+IMPORT Display, Viewers, Texts, MenuViewers, TextFrames, Oberon, OliObjects, FortiFrames;
 CONST
-	menuwidth = 14;
+	MenuWidth = 14;
 
 VAR
 	W: Texts.Writer;
@@ -13,13 +15,14 @@ VAR
 PROCEDURE Reset*();
 VAR
 	v: Viewers.Viewer;
-
+	frame: Display.Frame;
 BEGIN
-	v:= Oberon.Par.vwr;	(* Reset muss im Menubalken aufgerufen werden! *)
-	IF v.dsc.next IS FortiFrames.Frame THEN
-		v.dsc.next(FortiFrames.Frame).Xg:= 5;
-		v.dsc.next(FortiFrames.Frame).Yg:= -v.dsc.next(FortiFrames.Frame).H + 5;
-		FortiFrames.Restore(v.dsc.next(FortiFrames.Frame))	(* nur dieses Fenster soll restored werden *)
+	v := Oberon.Par.vwr;	(* Reset muss im Menubalken aufgerufen werden! *)
+	frame := v.dsc.next;
+	CASE frame OF FortiFrames.FortiFrame:
+		frame.Xg:= 5;
+		frame.Yg:= -v.dsc.next.H + 5;
+		FortiFrames.Restore(frame)	(* nur dieses Fenster soll restored werden *)
 	END
 END Reset;
 
@@ -27,10 +30,9 @@ PROCEDURE Open*();
 VAR
 	mv: MenuViewers.Viewer;
 	tf: TextFrames.Frame;
-	ff: FortiFrames.Frame;
+	ff: FortiFrames.FortiFrame;
 	x, y: INTEGER;
 	S: Texts.Scanner;
-
 BEGIN
 	Oberon.AllocateUserViewer(0, x, y);
 	Texts.OpenScanner(S, Oberon.Par.text, Oberon.Par.pos);
@@ -38,38 +40,37 @@ BEGIN
 	tf:= TextFrames.NewMenu(S.s, "System.Close System.Copy System.Grow GigaDraw.Delete GigaDraw.Reset");
 	NEW(ff);
 	FortiFrames.NewFrame(ff);
-	mv:= MenuViewers.New(tf, ff, menuwidth, x, y);
+	mv := MenuViewers.New(tf, ff, MenuWidth, x, y);
 	Viewers.Open(mv, x, y);
-	ff.Xg:= 5;
-	ff.Yg:= -ff.H + 5;
+	ff.Xg := 5;
+	ff.Yg := -ff.H + 5;
 	FortiFrames.Restore(ff)
 END Open;
 
 PROCEDURE Delete*();
 VAR
 	v: Viewers.Viewer;
+	frame: Display.Frame;
 	rsMsg: FortiFrames.RestoreSelMsg;
-
 BEGIN
-	v:= Oberon.Par.vwr;	(* Delete muss im Menu aufgerufen werden *)
-	IF v.dsc.next IS FortiFrames.Frame THEN
-		rsMsg.mode:= OliObjects.erase;
-		rsMsg.graphic:= v.dsc.next(FortiFrames.Frame).graphic;
+	v := Oberon.Par.vwr;	(* Delete muss im Menu aufgerufen werden *)
+	frame := v.dsc.next;
+	CASE frame OF FortiFrames.FortiFrame:
+		rsMsg.mode:= OliObjects.Erase;
+		rsMsg.graphic := frame.graphic;
 		Viewers.Broadcast(rsMsg);	(* erst alle Viewers updaten ... *)
-		OliObjects.DeleteSelected(v.dsc.next(FortiFrames.Frame).graphic)	(* ... dann das Modell veraendern *)
+		OliObjects.DeleteSelected(frame.graphic)	(* ... dann das Modell veraendern *)
 	END
 END Delete;
 
 PROCEDURE ChangeColor*();
 (* aendert die globale Variable color in OliObjects *)
-
 VAR
 	S: Texts.Scanner;
 	seltext: Texts.Text;	(* der selektiere Text *)
 	beg, end, time: LONGINT;	(* die Selektion *)
-
 BEGIN
-	seltext:= NIL;	(* wenn keine Selektion getaetigt, bleibt dieser Wert auf NIL *)
+	seltext := NIL;	(* wenn keine Selektion getaetigt, bleibt dieser Wert auf NIL *)
 	Oberon.GetSelection(seltext, beg, end, time);
 	IF seltext # NIL THEN
 		Texts.OpenScanner(S, seltext, beg);
@@ -97,7 +98,3 @@ END LogInt;
 BEGIN
 	Texts.OpenWriter(W)
 END GigaDraw.
-
-
-	
-	

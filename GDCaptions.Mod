@@ -25,24 +25,20 @@ VAR
 	captionmethod: CaptionMethod;	(* globale Variable, da Methoden fix sind *)
 	T: Texts.Text;	(* globaler Text: hier hinein werden alle Captions gespeichert *)
 
-PROCEDURE WriteWordClipped(pos, len: LONGINT; f: FortiFrames.Frame; u, v, w, h: INTEGER);
+PROCEDURE WriteWordClipped(pos, len: LONGINT; f: FortiFrames.FortiFrame; u, v, w, h: INTEGER);
 (* Schreibt ein Wort aus globalem Text T an Screenkoordinaten u, v *)
 VAR
 	R: Texts.Reader;
 	ch: CHAR;
 	dx, x1, y1, w1, h1: INTEGER;
-	(*pat: Display.Pattern; *)
 	pat: INTEGER;
-	
 BEGIN
 	IF (u + w >= f.X) & (u < f.X1 ) & (v + h >= f.Y) & (v < f.Y1) THEN	(* Caption ist (zumindest teilweise) sichtbar *)
 		Texts.OpenReader(R, T, pos);
 		Texts.Read(R, ch);
 		DEC(len);
 		WHILE (len >=  0) DO
-			(*Display.GetChar(R.fnt.raster, ch, dx, x1, y1, w1, h1, pat); *)
 			Fonts.GetPat(R.fnt, ch, dx, x1, y1, w1, h1, pat);
-			(*Display.CopyPatternC(f, R.col, pat, u + x1, v + y1, Display.replace); *)
 			Display.CopyPattern(R.col, pat, u + x1, v + y1, Display.replace);
 			INC(u, dx);
 			Texts.Read(R, ch);
@@ -52,10 +48,7 @@ BEGIN
 END WriteWordClipped;
 
 PROCEDURE CopyCaption(from, to: OliObjects.Object);
-(* kopiert eine Caption: from ist die OriginalCaption MyCaption, to ist eine vorgaengig mit MyCaption.do.new() erschaffene Caption *)
-
 VAR
-
 BEGIN
 	CASE from OF Caption:
 		CASE to OF Caption:
@@ -70,7 +63,6 @@ END CopyCaption;
 
 PROCEDURE SelectableCaption(caption: OliObjects.Object; x, y: INTEGER): BOOLEAN;
 (* entscheidet, ob ein Mausklick mit Toleranz tol die Caption selektiert *)
-
 VAR
 	selectable: BOOLEAN;
 BEGIN
@@ -87,10 +79,8 @@ END SelectableCaption;
 PROCEDURE HandleCaption(caption: OliObjects.Object; VAR msg: OliObjects.Message);
 (* interpretiert die Messages, welche von FortiFrames aus kommen *)
 (* im Moment wird nur die DrawMsg interpretiert *)
-
 VAR
 	u, v, w, h: INTEGER;	(* Screen-Koordinaten *)
-	
 BEGIN
 	IF msg IS FortiFrames.DrawMsg THEN
 		CASE msg OF FortiFrames.DrawMsg:
@@ -100,31 +90,18 @@ BEGIN
 				w:= caption.w;
 				h:= caption.h;
 				
-				(* Numeric CASE not implemented 
-				CASE msg.mode OF
-					OliObjects.draw:	IF caption.selected THEN
-													WriteWordClipped(caption.pos, caption.len, msg.f, u, v, w, h);
-													Display.ReplConstC(msg.f, Display.white, u, v + caption.yoffset, w, h, Display.invert);
-												ELSE
-													WriteWordClipped(caption.pos, caption.len, msg.f, u, v, w, h);
-												END;
-					|	OliObjects.select:	Display.ReplConstC(msg.f, Display.white, u, v + caption.yoffset, w, h, Display.invert);
-					|	OliObjects.normal:	Display.ReplConstC(msg.f, Display.white, u, v + caption.yoffset, w, h, Display.invert);
-					|	OliObjects.erase:	Display.ReplConstC(msg.f, Display.black, u, v + caption.yoffset, w, h, Display.replace);	(* einfach eine schwarze Box drueber malen *) 
-				END
-				*)
-				IF msg.mode = OliObjects.draw THEN
+				IF msg.mode = OliObjects.Draw THEN
 					IF caption.selected THEN
 						WriteWordClipped(caption.pos, caption.len, msg.f, u, v, w, h);
 						Display.ReplConst(Display.white, u, v + caption.yoffset, w, h, Display.invert);
 					ELSE
 						WriteWordClipped(caption.pos, caption.len, msg.f, u, v, w, h);
 					END;
-				ELSIF msg.mode = OliObjects.select THEN
+				ELSIF msg.mode = OliObjects.Select THEN
 					Display.ReplConst(Display.white, u, v + caption.yoffset, w, h, Display.invert);
-				ELSIF msg.mode = OliObjects.normal THEN
+				ELSIF msg.mode = OliObjects.Normal THEN
 					Display.ReplConst(Display.white, u, v + caption.yoffset, w, h, Display.invert);
-				ELSIF msg.mode = OliObjects.erase THEN
+				ELSIF msg.mode = OliObjects.Erase THEN
 					Display.ReplConst(Display.black, u, v + caption.yoffset, w, h, Display.replace);	(* einfach eine schwarze Box drueber malen *) 
 				END
 
@@ -135,10 +112,8 @@ END HandleCaption;
 					
 PROCEDURE NewCaption(): OliObjects.Object;
 (* retourniert eine neue Linie und initialisiert Methoden-Rekord *)
-
 VAR
 	caption: Caption;
-	
 BEGIN
 	NEW(caption);
 	caption.do:= captionmethod;
@@ -150,7 +125,6 @@ END NewCaption;
 PROCEDURE MakeCaption*();
 (* Kopiert einen markierten Text als Caption in markierten Frame.*)
 (* Eine Caption wird an Position von mark0 gemalt, wobei mark0 anschliessend verschwindet. *)
-
 VAR
 	caption: Caption;
 	w, h: INTEGER;
@@ -166,8 +140,8 @@ VAR
 	seltext: Texts.Text;
 	yoffset: INTEGER;	(* offset fuer Selektionsrechteck *)
 	rmMsg: FortiFrames.RestoreMarksMsg;
-
 BEGIN
+
 	IF (FortiFrames.mark0.set) THEN
 		
 		seltext:= NIL;	(* wurde keine Selektion getaetigt, so bleibt dieser Wert auf NIL *)
@@ -241,6 +215,7 @@ BEGIN
 		END
 
 	END
+
 END MakeCaption;
 
 BEGIN

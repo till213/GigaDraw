@@ -21,13 +21,13 @@ TYPE
  VAR
 	glinemethod: gLineMethod;	(* globale Variable, da Methoden fix sind *)
 
-PROCEDURE BresenhamLine(x0, y0, x1, y1, col: INTEGER; F: FortiFrames.Frame);
+PROCEDURE BresenhamLine(x0, y0, x1, y1, col: INTEGER; F: FortiFrames.FortiFrame);
 VAR
 	dx, dy, incE, incNE, d, x, y: INTEGER;
 	incX, incY: INTEGER;
 	tmp: INTEGER;
-	
 BEGIN
+
 	dx:= ABS(x1 - x0);
 	dy:= ABS(y1 - y0);
 	IF dx >= dy THEN	(* Steigung kleiner 1 *)
@@ -95,7 +95,6 @@ END BresenhamLine;
 	
 PROCEDURE CopygLine(from, to: OliObjects.Object);
 (* kopiert eine gLinie: from ist die Originallinie MygLine, to ist eine vorgaengig mit MygLine.do.new() erschaffene gLinie *)
-
 VAR
 
 BEGIN
@@ -119,37 +118,16 @@ END SelectablegLine;
 PROCEDURE HandlegLine(gline: OliObjects.Object; VAR msg: OliObjects.Message);
 (* interpretiert die Messages, welche von FortiFrames aus kommen *)
 (* im Moment wird nur die DrawMsg interpretiert *)
-
 VAR
 	u, v: INTEGER;	(* Screen-Koordinaten *)
-	
 BEGIN
+
 	CASE msg OF FortiFrames.DrawMsg:
 		CASE gline OF gLine:
 			u:= gline.x + msg.f.x;	(* Screenkoordinaten berechnen *)
 			v:= gline.y + msg.f.y;
 		
-		    (* Numerical case not implemented *)
-			(*
-			CASE msg.mode OF
-				OliObjects.draw:	IF gline.selected THEN
-												BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
-												Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
-											ELSE
-												BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
-											END;
-				|	OliObjects.select:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
-				|	OliObjects.normal:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
-				|	OliObjects.erase:	Display.ReplConstC(msg.f, Display.white, u, v, SAW, SAH, Display.invert);
-												Display.ReplConstC(msg.f, Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
-												BresenhamLine(u, v, u + gline.w, v + gline.h, Display.black, msg.f);
-												
-			END
-			*)
-			IF msg.mode = OliObjects.draw THEN	
+			IF msg.mode = OliObjects.Draw THEN	
 				IF gline.selected THEN
 					BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
 					Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
@@ -157,13 +135,13 @@ BEGIN
 				ELSE
 					BresenhamLine(u, v, u + gline.w, v + gline.h, gline.col, msg.f);
 				END;
-			ELSIF msg.mode = OliObjects.select THEN
+			ELSIF msg.mode = OliObjects.Select THEN
 				Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
 				Display.ReplConst(Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
-			ELSIF msg.mode = OliObjects.normal THEN	
+			ELSIF msg.mode = OliObjects.Normal THEN	
 				Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
 				Display.ReplConst(Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert)
-			ELSIF msg.mode = OliObjects.erase THEN
+			ELSIF msg.mode = OliObjects.Erase THEN
 				Display.ReplConst(Display.white, u, v, SAW, SAH, Display.invert);
 				Display.ReplConst(Display.white, u + gline.w, v + gline.h, SAW, SAH, Display.invert);
 				BresenhamLine(u, v, u + gline.w, v + gline.h, Display.black, msg.f)								
@@ -174,13 +152,11 @@ END HandlegLine;
 					
 PROCEDURE NewgLine(): OliObjects.Object;
 (* retourniert eine neue gLinie und initialisiert Methoden-Rekord *)
-
 VAR
 	gline: gLine;
-	
 BEGIN
 	NEW(gline);
-	gline.do:= glinemethod;
+	gline.do := glinemethod;
 	RETURN gline
 END NewgLine;
 
@@ -190,12 +166,9 @@ PROCEDURE MakegLine*();
 (* Zeichnet gLinie im mit dem Stern markierten Frame. Diese ist anschliessend selektiert *)
 (* eine Linie wird von mark0 nach mark1 gemalt, wobei mark0 anschliessend Position *)
 (* von mark1 einnimmt und mark1 verschwindet. *)
-
 VAR
 	gline: gLine;
-	
-rmMsg: FortiFrames.RestoreMarksMsg;
-	
+	rmMsg: FortiFrames.RestoreMarksMsg;	
 BEGIN
 	IF ((FortiFrames.mark0.set) & (FortiFrames.mark1.set)) THEN
 
@@ -227,13 +200,12 @@ BEGIN
 END MakegLine;
 
 BEGIN
-	
 	(* der Methodenrekord wird einmal initialisiert und ist somit fix *)
 	NEW(glinemethod);
-	glinemethod.new:= NewgLine;
-	glinemethod.copy:= CopygLine;
-	glinemethod.selectable:= SelectablegLine;
-	glinemethod.handle:= HandlegLine;
+	glinemethod.new := NewgLine;
+	glinemethod.copy := CopygLine;
+	glinemethod.selectable := SelectablegLine;
+	glinemethod.handle := HandlegLine;
 END gLines.
 
 
