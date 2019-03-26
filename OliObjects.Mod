@@ -58,12 +58,12 @@ PROCEDURE Max(a, b: LONGINT): LONGINT;
 VAR
 	max: LONGINT;
 BEGIN
-  IF a >= b THEN
-    max := a
-  ELSE
-    max := b
-  END
-  RETURN max
+	IF a >= b THEN
+		max := a
+	ELSE
+		max := b
+	END
+	RETURN max
 END Max;
 
 (* Adds the object to the graphics tree *)
