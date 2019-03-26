@@ -18,7 +18,7 @@ TYPE
 	(* The base of all messages *)
 	Message* = RECORD END;
 
-    (* The interface - "methods" - that all objects are required to implement:
+	(* The interface - "methods" - that all objects are required to implement:
 	   Each object is expected to at least be able to create a new instance,
 	   create a copy and determine whether it is selectable at the given
 	   coordinates. All object-specific methods are handled in 'handle', by
