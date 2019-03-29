@@ -6,11 +6,11 @@ MODULE PacCmd;
 IMPORT Display, Viewers, Input, Files, OliObjects, FortiFrames, GigaDraw, PacMan, Random;
 
 CONST
-	UP = 19;
-	DOWN = 20;
-	RIGHT = 18;
-	LEFT = 17;
-	ESC = 27;
+	UP = 13X;
+	DOWN = 14X;
+	RIGHT = 12X;
+	LEFT = 11X;
+	ESC = 1BX;
 
 	SPEED = 2;	(* PacMans Geschwindigkeit *)
 	
@@ -21,7 +21,7 @@ CONST
 
 TYPE
 	Decision = RECORD
-		dir: INTEGER;	(* Richtung, in die PacMan kriecht *)
+		dir: CHAR;	(* Richtung, in die PacMan kriecht *)
 		cnt: INTEGER	(* solange cnt > 0, kriecht PacMan in selbe Richtung *)
 	END;
 
@@ -33,14 +33,14 @@ VAR
 	ch: CHAR;
 	fpmMsg: FortiFrames.FPacMoveMsg;
 	run: BOOLEAN;
-	key: INTEGER;
+	key: CHAR;
 BEGIN
 	run := TRUE;
 	WHILE run DO
 
 		Input.Read(ch);
 		
-		key := ORD(ch);
+		key := ch;
 		IF key = UP THEN
 			fpmMsg.dx:= 0;
 			fpmMsg.dy:= SPEED;
@@ -99,7 +99,7 @@ BEGIN
 		WHILE run DO
 			IF Input.Available() > 0 THEN
 				Input.Read(ch);
-				IF ORD(ch) = ESC THEN
+				IF ch = ESC THEN
 					run := FALSE
 				END	
 			END;
@@ -124,26 +124,26 @@ BEGIN
 					Viewers.Broadcast(fpmMsg);
 
 				ELSE	(* decision[i].cnt = 0 *)
-				
+
 					(*decision[i].cnt:= SHORT(SHORT(ENTIER(Random.rndn(rnd) * RANGE)));*)	(* Bestimme neuen Counter *)
 					decision[i].cnt:= FLOOR(Random.rndn(rnd) * FLT(RANGE));
-					choice:= Random.rndn(rnd) * 4.0;
+					choice := Random.rndn(rnd) * 4.0;
 					IF choice <= 1.0 THEN
-						decision[i].dir:= RIGHT;
-						fpmMsg.dx:= SPEED;
-						fpmMsg.dy:= 0
+						decision[i].dir := RIGHT;
+						fpmMsg.dx := SPEED;
+						fpmMsg.dy := 0
 					ELSIF choice <= 2.0 THEN
-						decision[i].dir:= LEFT;
-						fpmMsg.dx:= -SPEED;
-						fpmMsg.dy:= 0
+						decision[i].dir := LEFT;
+						fpmMsg.dx := -SPEED;
+						fpmMsg.dy := 0
 					ELSIF choice <= 3.0 THEN
-						decision[i].dir:= UP;
-						fpmMsg.dx:= 0;
-						fpmMsg.dy:= SPEED
+						decision[i].dir := UP;
+						fpmMsg.dx := 0;
+						fpmMsg.dy := SPEED
 					ELSE
-						decision[i].dir:= DOWN;
-						fpmMsg.dx:= 0;
-						fpmMsg.dy:= -SPEED
+						decision[i].dir := DOWN;
+						fpmMsg.dx := 0;
+						fpmMsg.dy := -SPEED
 					END;
 					DEC(decision[i].cnt);
 					Viewers.Broadcast(fpmMsg)

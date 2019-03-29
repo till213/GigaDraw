@@ -162,7 +162,9 @@ BEGIN
 	pacManMethod.handle:= HandlePacMan;
 	id := 0;
 
-	(* bitmap data *)
+	(* bitmap data - this data is brought into the expected order 
+	   in The GIMP: LSB first, exported as binary bitmap XBM and
+	   copy/pasted with a HEX editor here *)
 	pacManData.anim[0] := SYSTEM.ADR($1010 F00FF81F FC3FFE7F FFFFFFFF FFFFFFFF FFFFFFFF E7FFE7FF FE7FFC3F F81FF00F$);
 	pacManData.anim[1] := SYSTEM.ADR($1010 F00FF81F FC3FFC7F F8FFF0FF E0FFC0FF C0FFE0FF F0FFF8FF 9C7F9C3F F81FF00F$);
 	
