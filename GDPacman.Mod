@@ -76,7 +76,7 @@ BEGIN
 			ELSIF msg.mode = OliObjects.Normal THEN 
 				Display.ReplConst(Display.white, u, v, w, h, Display.invert)
 			ELSIF msg.mode = OliObjects.Erase THEN 
-				Display.ReplConst(Display.black, u, v, w, h, Display.paint)
+				Display.CopyPattern(Display.black, pacManData.anim[pacMan.currentAnimationFrame], u, v, Display.invert);
 			END
 		END
 
@@ -117,7 +117,7 @@ BEGIN
 	INC(id);	(* naechste zu vergebene ID aktualisieren *)
 	pacMan.currentAnimationFrame := 0;
 	pacMan.do := pacManMethod;
-	pacMan.col := OliObjects.color;
+	pacMan.col := Display.black; (*OliObjects.color;*)
 	pacMan.selected := FALSE;	(* PacMan soll nicht selektiert werden *)
 
 	RETURN pacMan
@@ -163,8 +163,8 @@ BEGIN
 	id := 0;
 
 	(* bitmap data *)
-	pacManData.anim[0] := SYSTEM.ADR($0F0F 0A0FE01F F03FF87F FCE7FEE7 FEFFFEFF FEFFFEFF FEFFFE7F FC3FF81F F00FE000 00$);
-	pacManData.anim[1] := SYSTEM.ADR($0F0F 0A0FE01F F039F879 FC3FFE1F FE0FFE07 FE0FFE1F FE3FFE7F FC3FF81F F00FE000 00$);
+	pacManData.anim[0] := SYSTEM.ADR($1010 F00FF81F FC3FFE7F FFFFFFFF FFFFFFFF FFFFFFFF E7FFE7FF FE7FFC3F F81FF00F$);
+	pacManData.anim[1] := SYSTEM.ADR($1010 F00FF81F FC3FFC7F F8FFF0FF E0FFC0FF C0FFE0FF F0FFF8FF 9C7F9C3F F81FF00F$);
 	
 	pacManData.w := PacManWidth;
 	pacManData.h := PacManHeight;
