@@ -93,7 +93,9 @@ BEGIN
 			pacmen[i].w:= PacMan.PacManWidth;
 			pacmen[i].h:= PacMan.PacManHeight;
 			pacmen[i](PacMan.PacMan).id:= i;
-			FortiFrames.InsertObject(FortiFrames.markedG, pacmen[i])
+			FortiFrames.InsertObject(FortiFrames.markedG, pacmen[i]);
+
+			decision[i].cnt := 0;
 		END;
 		run := TRUE;
 		WHILE run DO
@@ -103,25 +105,29 @@ BEGIN
 					run := FALSE
 				END	
 			END;
-			FOR i:= 0 TO N-1 DO
+			
+			FOR i:= 0 TO N - 1 DO
 				fpmMsg.id := i;
+				
 				IF decision[i].cnt > 0 THEN
+			
 			
 					IF decision[i].dir = UP THEN
 						fpmMsg.dx := 0;
 						fpmMsg.dy := SPEED;
 					ELSIF decision[i].dir = DOWN THEN
-						fpmMsg.dx:= 0;
-						fpmMsg.dy:= -SPEED;
+						fpmMsg.dx := 0;
+						fpmMsg.dy := -SPEED;
 					ELSIF decision[i].dir = RIGHT THEN
-						fpmMsg.dx:= SPEED;
-						fpmMsg.dy:= 0;
+						fpmMsg.dx := SPEED;
+						fpmMsg.dy := 0;
 					ELSIF decision[i].dir = LEFT THEN
-						fpmMsg.dx:= -SPEED;
-						fpmMsg.dy:= 0;
+						fpmMsg.dx := -SPEED;
+						fpmMsg.dy := 0;
 					END;
 					DEC(decision[i].cnt);
 					Viewers.Broadcast(fpmMsg);
+					
 
 				ELSE	(* decision[i].cnt = 0 *)
 
@@ -147,6 +153,7 @@ BEGIN
 					END;
 					DEC(decision[i].cnt);
 					Viewers.Broadcast(fpmMsg)
+					
 				END
 			END
 		END
