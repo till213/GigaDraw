@@ -33,4 +33,4 @@ Circles.MakeCircle
 PacMan.MakePacMan
 PacCmd.Start
 PacCmd.PacAttack
-PacCmd.WritePacFile
+
