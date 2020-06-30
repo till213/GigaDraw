@@ -34,7 +34,8 @@ TYPE
 	PacManDesc* = RECORD(OliObjects.ObjectDesc)
 		id*: BYTE;
 		currentAnimationFrame*: BYTE;	(* momentanes Animationsframe *)
-		animationOffset*: BYTE
+		animationOffset*: BYTE;
+		anim: ARRAY 10 OF INTEGER;
 	END;
 
 VAR
@@ -142,6 +143,7 @@ BEGIN
 	pacMan.do := pacManMethod;
 	pacMan.col := Display.black; (*OliObjects.color;*)
 	pacMan.selected := FALSE;	(* PacMan soll nicht selektiert werden *)
+	(* NEW(pacMan.anim, 10); *)
 
 	RETURN pacMan
 

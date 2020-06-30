@@ -2,8 +2,8 @@ GigaDraw.Tool
 _________________________
 
 # GigaDraw base modules
-ORP.Compile OliObjects.Mod/s FortiFrames.Mod/s GigaDraw.Mod/s 
-Random.Mod/s~
+ORP.Compile OliObjects.Mod/s FortiFrames.Mod/s
+GigaDraw.Mod/s Random.Mod/s~
 
 # GigaDraw objects
 ORP.Compile GDLines.Mod GDCaptions.Mod GDPacMan.Mod/s
