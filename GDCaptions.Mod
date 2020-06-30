@@ -1,29 +1,32 @@
+(* 
+   Implements captions which are created from selected text.
+
+   Systemsoftware WS 98/99, Oliver Knoll, Raphael Huber 
+*)
 MODULE Captions;
-(* Systemsoftware WS 98/99, Oliver Knoll, Raphael Huber *)
 
-(* implementiert Captions - die Captionkoordinaten sind "mathematisch", bei einer DrawMsg rechnen die Captions *)
-(* diese Koordinaten selbstaendig in Screenkoordinaten um *)
-
-(* w und h sind immer positiv (dies vereinfacht die Berechnungen in SelectableLine() *)
-
-IMPORT Display, OliObjects, FortiFrames, Fonts, Texts, TextFrames, Viewers, Oberon; (*, Viewers, Texts, TextFrames, Fonts, Oberon; *)
+IMPORT Display, OliObjects, FortiFrames, Fonts, Texts, TextFrames, Viewers, Oberon;
 
 CONST
-	tol = 2;	(* Toleranz: 2 Pixel darf man danebenklicken *)
+	SelectionTolerance = 2;
 	
 TYPE
 	Caption = POINTER TO CaptionDesc;
 	CaptionDesc = RECORD(OliObjects.ObjectDesc)
-		pos: LONGINT;	(* Position im globalen Text *)
-		len: LONGINT;	(* Laenge des Captions *)
-		yoffset: INTEGER;	(* maximaler yoffset des Fonts *)
+		(* Position in global text *)
+		pos: LONGINT;
+		(* Caption length *)
+		len: LONGINT;
+		(* Maximum y-offset of font *)
+		yoffset: INTEGER;
 	END;
 	
 	CaptionMethod = OliObjects.Method;
 
 VAR
-	captionmethod: CaptionMethod;	(* globale Variable, da Methoden fix sind *)
-	T: Texts.Text;	(* globaler Text: hier hinein werden alle Captions gespeichert *)
+	captionMethod: CaptionMethod;
+	(* Global text into which all captions are copied *)
+	T: Texts.Text;	
 
 PROCEDURE WriteWordClipped(pos, len: LONGINT; f: FortiFrames.FortiFrame; u, v, w, h: INTEGER);
 (* Schreibt ein Wort aus globalem Text T an Screenkoordinaten u, v *)
@@ -62,12 +65,12 @@ BEGIN
 END CopyCaption;
 
 PROCEDURE SelectableCaption(caption: OliObjects.Object; x, y: INTEGER): BOOLEAN;
-(* entscheidet, ob ein Mausklick mit Toleranz tol die Caption selektiert *)
+(* entscheidet, ob ein Mausklick mit Toleranz SelectionTolerance die Caption selektiert *)
 VAR
 	selectable: BOOLEAN;
 BEGIN
 	CASE caption OF Caption:
-		IF (x >= caption.x - tol) & (x <= caption.x + caption.w + tol) & (y >= caption.y - tol + caption.yoffset) & (y <= caption.y + caption.h + tol + caption.yoffset) THEN
+		IF (x >= caption.x - SelectionTolerance) & (x <= caption.x + caption.w + SelectionTolerance) & (y >= caption.y - SelectionTolerance + caption.yoffset) & (y <= caption.y + caption.h + SelectionTolerance + caption.yoffset) THEN
 			selectable := TRUE
 		ELSE
 			selectable := FALSE
@@ -116,7 +119,7 @@ VAR
 	caption: Caption;
 BEGIN
 	NEW(caption);
-	caption.do:= captionmethod;
+	caption.do:= captionMethod;
 	RETURN caption
 END NewCaption;
 
@@ -196,7 +199,7 @@ BEGIN
 			caption.y:= FortiFrames.mark0.y;
 			caption.col:= color;	(* Farbe vom letzten Buchstaben - eigentlich ueberfluessig, da Color schon im Text selbst gespeichert ist *)
 			caption.selected:= TRUE;	(* Linie soll normal gemalt werden *)
-			caption.do:= captionmethod;
+			caption.do:= captionMethod;
 			(* erweiterte Felder werden initialisiert *)
 			caption.pos:= T.len;	(* Text wird am Schluss angehaengt *)
 			caption.len:= len;
@@ -222,11 +225,11 @@ BEGIN
 	NEW(T);
 	T:= TextFrames.Text("global");	(* Oeffnen des globalen Textes *)
 	(* der Methodenrekord wird einmal initialisiert und ist somit fix *)
-	NEW(captionmethod);
-	captionmethod.new:= NewCaption;
-	captionmethod.copy:= CopyCaption;
-	captionmethod.selectable:= SelectableCaption;
-	captionmethod.handle:= HandleCaption;
+	NEW(captionMethod);
+	captionMethod.new:= NewCaption;
+	captionMethod.copy:= CopyCaption;
+	captionMethod.selectable:= SelectableCaption;
+	captionMethod.handle:= HandleCaption;
 END Captions.
 
 

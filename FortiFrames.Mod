@@ -43,30 +43,35 @@ TYPE
 	RestoreMarksMsg* = RECORD (Display.FrameMsg) END;
 	RestoreMsg = RECORD (Display.FrameMsg) END;
 
-	(* Messages fuer einzelne Objekte, die in irgendeinem Frame sitzen: *)
-
-	(* PacMan Bewegungsmeldung: *)
-	FPacMoveMsg* = RECORD (Display.FrameMsg)	(* diese Message geht an Frames... *)
+	(* Pac-Man move message which is sent to all frames *)
+	FPacMoveMsg* = RECORD (Display.FrameMsg)
 		dx*: INTEGER;
 		dy*: INTEGER;
-		id*: INTEGER;	(* welcher PacMan soll sich bewegen? *)
+		id*: INTEGER; (* ID of Pacman to be moved *)
 	END;
 
-	OPacMoveMsg* = RECORD (OliObjects.Message)	(* ...und diese Meldung geht an Objecte innerhalb Frame *)
+	(* Messages targeted at OliObjects within a given frame *)
+
+	OPacMoveMsg* = RECORD (OliObjects.Message)
 		f*: FortiFrame;
 		dx*: INTEGER;
 		dy*: INTEGER;
 		id*: INTEGER
 	END;
 	
-	markDesc = RECORD	(* Markers, beziehen sich auf Grafik (nicht auf Frame) und bezeichen math. Koord *)
-		x*, y*: INTEGER;	(* sind also auch in allen Viewers der Grafik sichtbar! *)
+	(* Markers relate to the Graphic document (not to a specific frame)
+	   and are hence visible in all viewer frames *)
+	markDesc = RECORD
+		(* World coordinates *)
+		x*, y*: INTEGER;
 		set*: BOOLEAN
 	END;
 
 VAR 
-	mark0*, mark1*: markDesc;	(* Markers global -> nur 1 Fokus fuer alle Grafiken *)
-	markedG*: OliObjects.Graphic;	(* welche (der evt. versch. offenen) Grafiken traegt den Fokus (Markers) *)
+    (* Global markers, visible in all frames *)
+	mark0*, mark1*: markDesc;
+	(* The "focus" Graphic: the one having been marked last *)
+	markedG*: OliObjects.Graphic;
 
 PROCEDURE PinsideBox(x, y, bx1, by1, bx2, by2: INTEGER): BOOLEAN;
 VAR
@@ -87,18 +92,19 @@ VAR
 	roMsg: RestoreObjMsg; 
 	rmMsg: RestoreMarksMsg;
 BEGIN
-	(* zuvor selektierte Objekte unselektieren *)
+	(* Deselect previously selected objects *)
 	rsMsg.mode := OliObjects.Normal; 
 	rsMsg.graphic := markedG; 
 	Viewers.Broadcast(rsMsg);
 	OliObjects.DeselectAll(graphic); 
-	(* neues Objekt (selektiert) in Model einfuegen und zeichnen *)
+	(* Add new object *)
 	OliObjects.AddObject(graphic, object);
 	roMsg.obj := object;
 	roMsg.mode := OliObjects.Draw;
 	roMsg.graphic := markedG; 
 	Viewers.Broadcast(roMsg);
-	Viewers.Broadcast(rmMsg)	(* Markers sind u.U. neu: mark1 am Ende einer neuen Linie *)
+	(* Restore markers *)
+	Viewers.Broadcast(rmMsg)	
 END InsertObject;
 
 PROCEDURE SetMarkX*(marker: INTEGER; x: INTEGER);
@@ -131,7 +137,8 @@ END SetMarkEnabled;
 PROCEDURE Restore*(frame: FortiFrame);
 VAR
 	drawMsg: DrawMsg; 
-	x, y: INTEGER;	(* ticks Koordinaten *)
+	(* Coordinates of ticks *)
+	x, y: INTEGER;
 	rmMsg: RestoreMarksMsg;
 BEGIN
 
@@ -180,8 +187,10 @@ END Restore;
 
 PROCEDURE Edit(frame: FortiFrame; x0, y0: INTEGER; k0: SET);
 VAR 
-	x1, y1: INTEGER;	(* x0, y0 bei klick  -   x1, y1 bei loslassen *)
-	k1, k2: SET;	(* k0: Taste bei klick  -  k1: Tasten bei loslassen *)
+	(* x0, y0 upon click, x1, y1 upon release *)
+	x1, y1: INTEGER;
+	(* k0: mouse keys upon click  -  k1: mouse keys upon release *)	
+	k1, k2: SET;	
 	dx, dy: INTEGER;
 	v0, v1: Viewers.Viewer;
 	rmMsg: RestoreMarksMsg; 
@@ -192,7 +201,8 @@ VAR
 BEGIN
 
 	k1 := k0;
-	REPEAT	(* warte bis Maus losgelasen, registriere solange zusaetzliche Klicks (Interklicks) *)
+	(* Register inter-clicks until mouse keys k2 have all been released *)
+	REPEAT	
 		Input.Mouse(k2, x1, y1); 
 		k1 := k1 + k2;
 		DEC(x1, (x1 - frame.x) MOD 4); 
@@ -203,27 +213,31 @@ BEGIN
 	
 	IF k0 = {LeftMouseButton} THEN
 		IF k1 = {LeftMouseButton} THEN	
-			(* left only: setze 1. Marker *)
-			Viewers.Broadcast(rmMsg);	(* allframe. alte Markers entfernen *)
+			(* Left only: place first marker *)
+			(* First remove all markers *)
+			Viewers.Broadcast(rmMsg);	
 			mark0.set := TRUE;
 			mark1.set := FALSE; 
 			markedG := frame.graphic;
 			mark0.x := x1 - frame.x;
 			mark0.y := y1 - frame.y;
-			Viewers.Broadcast(rmMsg)	(* nun neue Markers zeichnen *)
+			(* Draw the new marker *)
+			Viewers.Broadcast(rmMsg)
 		ELSIF k1 = {LeftMouseButton, MiddleMouseButton} THEN
-			(* left, middle: setze 2. Marker, falls 1. gesetzt und innerhalb gl. Grafik (muss aber nicht in gl. Viewer sein *)
+			(* Left, middle: place 2nd marker, if 1st marker is already set
+			   in the same Graphic (but which does not have to be in the same 
+			   viewer framen *)
 			IF mark0.set & (markedG = frame.graphic) THEN
-				Viewers.Broadcast(rmMsg);	(* allframe. alten 2. Marker entfernen *)
+				Viewers.Broadcast(rmMsg);	(* Remove 2nd marker *)
 				mark1.set := TRUE; 
 				mark1.x := x1 - frame.x;
 				mark1.y := y1 - frame.y;
-				Viewers.Broadcast(rmMsg)	(* nun neuen 2. Marker zeichnen *)
+				Viewers.Broadcast(rmMsg)	(* Redraw 2nd marker *)
 			END
 		END
 	ELSIF k0 = {MiddleMouseButton} THEN
 		IF k1 = {MiddleMouseButton} THEN
-			(* middle only: verschiebt sel. Objekte *)
+			(* Middle only: move selected objects *)
 			rsMsg.mode := OliObjects.Erase; 
 			rsMsg.graphic := frame.graphic; 
 			Viewers.Broadcast(rsMsg);
@@ -232,19 +246,22 @@ BEGIN
 			rsMsg.graphic := frame.graphic; 
 			Viewers.Broadcast(rsMsg)	
 		ELSIF k1 = {MiddleMouseButton, LeftMouseButton} THEN
-			(* middle, left: kopiert sel. Objekte (auch in andere Viewers / Grafiken !) *)
+			(* Middle, left: copy selected objects (also into different viewers or even Graphics) *)
 			v0 := Viewers.This(x0, y0); 
 			v1 := Viewers.This(x1, y1);
-			IF v0 = v1 THEN	(* kopiere in gleichen Viewer *)
+			IF v0 = v1 THEN	
+				(* Copy within same viewer *)
 				rsMsg.mode := OliObjects.Normal; 
 				rsMsg.graphic := frame.graphic; 
 				Viewers.Broadcast(rsMsg);
 				OliObjects.Copy(frame.graphic, frame.graphic, x1 - x0, y1 - y0)
 			ELSIF v1.dsc.next IS FortiFrame THEN
-				(* kopiere in anderen Viewer *)
+				(* Copy into different viewer *)
 				dx := (x1 - v1.dsc.next(FortiFrame).x) - (x0-v0.dsc.next(FortiFrame).x);
 				dy := (y1 - v1.dsc.next(FortiFrame).y) - (y0-v0.dsc.next(FortiFrame).y);
-				rsMsg.mode := OliObjects.Normal; rsMsg.graphic := frame.graphic; Viewers.Broadcast(rsMsg);
+				rsMsg.mode := OliObjects.Normal; 
+				rsMsg.graphic := frame.graphic; 
+				Viewers.Broadcast(rsMsg);
 				OliObjects.Copy(v0.dsc.next(FortiFrame).graphic, v1.dsc.next(FortiFrame).graphic, dx, dy)
 			END;
 			rsMsg.mode := OliObjects.Draw;
@@ -255,14 +272,14 @@ BEGIN
 			END;
 			Viewers.Broadcast(rsMsg)
 		ELSIF k1 = {RightMouseButton, MiddleMouseButton} THEN
-			(* middle, right: Bewege sichtbaren Ausschnitt *)
+			(* Middle, right: move entire graphic document *)
 			INC(frame.Xg, x1 - x0); 
 			INC(frame.Yg, y1 - y0); 
 			Restore(frame)
 		END
 	ELSIF k0 = {RightMouseButton} THEN
 		IF k1 = {RightMouseButton} THEN
-			(* right only: Selektiere Objekte in Bereich - resp. MarkSingle /DeselectAll, wenn bloss Punkt angeklickt *)
+			(* Right only: select all objects in area; deselect all if only point area *)
 			IF (x0 # x1) OR (y0 # y1) THEN
 				rsMsg.mode := OliObjects.Normal; 
 				rsMsg.graphic := frame.graphic; 
@@ -303,7 +320,8 @@ BEGIN
 
 		CASE msg OF Oberon.InputMsg:
 			IF msg.id = Oberon.track THEN
-				x := msg.X - (msg.X - frame.x) MOD 4; y := msg.Y - (msg.Y - frame.y) MOD 4;	(* Mouse moves "MOD 4" *)
+				(* Mouse moves "MOD 4" *)
+				x := msg.X - (msg.X - frame.x) MOD 4; y := msg.Y - (msg.Y - frame.y) MOD 4;
 				IF msg.keys # {} THEN Edit(frame, x, y, msg.keys)
 				ELSE Oberon.DrawMouseArrow(x, y)
 				END
@@ -347,7 +365,7 @@ BEGIN
 		| RestoreMsg:
 			Restore(frame)
 		| FPacMoveMsg:	
-			(* kopiere Daten um und informiere Objecte in F *)
+			(* Copy payload into message broadcast to all objects *)
 			opmMsg.f:= frame;
 			opmMsg.dx := msg(FPacMoveMsg).dx;
 			opmMsg.dy := msg(FPacMoveMsg).dy;
